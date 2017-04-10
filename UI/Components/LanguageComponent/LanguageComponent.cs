@@ -9,6 +9,14 @@ public class LanguageComponent : MonoBehaviour
 
     public Text m_text;
 
+    public void Start()
+    {
+        if (m_text == null)
+        {
+            m_text = GetComponent<Text>();
+        }
+    }
+
     public void Init()
     {
         SetLanguage();
