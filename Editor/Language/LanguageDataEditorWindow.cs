@@ -15,7 +15,7 @@ public class LanguageDataEditorWindow : EditorWindow
     private List<string> m_dataNameList = new List<string>();
     Dictionary<string, object> m_editorConfig;
 
-    List<string> m_languageKeyList;
+    List<string> m_languageKeyList = new List<string>();
 
     private int m_currentSelectIndex;
 
