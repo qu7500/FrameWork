@@ -15,7 +15,7 @@ public class FontChooserComponent : MonoBehaviour {
 
 	void Start () 
     {
-        if (m_text = null)
+        if (m_text == null)
         {
             m_text = GetComponent<Text>();
         }
