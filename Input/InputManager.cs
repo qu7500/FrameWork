@@ -83,7 +83,7 @@ public class InputManager
 
     static string m_DispatcherName;
     static IInputDispatcher dispatcher;
-    static IInputDispatcher GetDispatcher(string DispatcherName)
+    public static IInputDispatcher GetDispatcher(string DispatcherName)
     {
         if (s_dispatcher.TryGetValue(DispatcherName,out dispatcher))
         {
@@ -95,7 +95,7 @@ public class InputManager
         }
     }
 
-    static InputDispatcher<T> GetDispatcher<T>() where T : IInputEventBase
+    public static InputDispatcher<T> GetDispatcher<T>() where T : IInputEventBase
     {
         m_DispatcherName = typeof(T).Name;
 
@@ -145,6 +145,20 @@ public class InputManager
 
     #region AddListener
 
+    public static void AddAllEventListener(string eventName, InputEventCallBack callback)
+    {
+        IInputDispatcher dispatcher = GetDispatcher(eventName);
+        dispatcher.m_OnAllEventDispatch += callback;
+    }
+
+    public static void AddAllEventListener<T>(InputEventHandle<T> callback) where T : IInputEventBase
+    {
+        string eventName = typeof(T).Name;
+
+        InputDispatcher<T> dispatcher = GetDispatcher<T>();
+        dispatcher.OnEventDispatch += callback;
+    }
+
     public static void AddListener(string eventName,string eventKey, InputEventHandle<IInputEventBase> callback)
     {
         IInputDispatcher dispatcher = GetDispatcher(eventName);
@@ -167,6 +181,12 @@ public class InputManager
     #endregion
 
     #region RemoveListener
+
+    public static void RemoveAllEventListener(string eventName, InputEventCallBack callback)
+    {
+        IInputDispatcher dispatcher = GetDispatcher(eventName);
+        dispatcher.m_OnAllEventDispatch -= callback;
+    }
 
     public static void RemoveListener(string eventName, string eventKey, InputEventHandle<IInputEventBase> callback)
     {
