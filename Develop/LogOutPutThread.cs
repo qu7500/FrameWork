@@ -23,6 +23,8 @@ public class LogOutPutThread
 
         public void Init()
         {
+            return;
+
 #if !(UNITY_WEBGL && !UNITY_EDITOR)
         try
         {
