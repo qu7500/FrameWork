@@ -45,6 +45,6 @@ public class EditorTool :MonoBehaviour
             }
         }
 
-        return -1;
+        return 0;
     }
 }
