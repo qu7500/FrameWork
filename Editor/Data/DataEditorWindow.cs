@@ -7,13 +7,13 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using MiniJSON;
+using FrameWork;
 
 public class DataEditorWindow : EditorWindow
 {
     UILayerManager m_UILayerManager;
 
-    [MenuItem("Window/数据编辑器", priority = 500)]
+    [MenuItem("Window/数据编辑器", priority = 501)]
     public static void ShowWindow()
     {
         EditorWindow.GetWindow(typeof(DataEditorWindow));
@@ -75,7 +75,7 @@ public class DataEditorWindow : EditorWindow
 
         GenerateAllDataClassGUI();
 
-        CleanCatchGUI();
+        CleanCacheGUI();
 
         EditorGUILayout.EndVertical();
     }
@@ -173,11 +173,11 @@ public class DataEditorWindow : EditorWindow
         }
     }
 
-    void CleanCatchGUI()
+    void CleanCacheGUI()
     {
         if (GUILayout.Button("清除缓存"))
         {
-            DataManager.CleanCatch();
+            DataManager.CleanCache();
         }
     }
 
@@ -254,7 +254,7 @@ public class DataEditorWindow : EditorWindow
             }
             else if (dict.ContainsKey(mianKey))
             {
-                EditorGUILayout.LabelField("重复的主键！", EditorGUIStyleData.s_WarnMessageLabel);
+                EditorGUILayout.LabelField("重复的主键！", EditorGUIStyleData.WarnMessageLabel);
             }
 
             EditorGUILayout.Space();
@@ -432,7 +432,7 @@ public class DataEditorWindow : EditorWindow
         }
         catch(Exception e)
         {
-            EditorGUILayout.TextArea(e.ToString(),EditorGUIStyleData.s_ErrorMessageLabel);
+            EditorGUILayout.TextArea(e.ToString(),EditorGUIStyleData.ErrorMessageLabel);
         }
 
         return data;
@@ -613,7 +613,7 @@ public class DataEditorWindow : EditorWindow
             if (m_currentData.TableKeys.Contains(m_newFieldName))
             {
                 isShowButton = false;
-                EditorGUILayout.TextField("字段名不能重复！",EditorGUIStyleData.s_WarnMessageLabel);
+                EditorGUILayout.TextField("字段名不能重复！",EditorGUIStyleData.WarnMessageLabel);
             }
 
             m_newFieldDefaultValue = EditorUtilGUI.FieldGUI_Type(m_newAddType, EditorTool.GetAllEnumType()[m_newEnumTypeIndex], m_newFieldDefaultValue, "默认值");

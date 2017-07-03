@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System;
-using MiniJSON;
+using FrameWork;
 
 public class DevelopReplayManager 
 {
@@ -20,7 +20,17 @@ public class DevelopReplayManager
     const string c_eventNameKey = "e";
     const string c_serializeInfoKey = "s";
 
-    static bool s_isReplay = false;
+    private static bool s_isReplay = false;
+
+    public static bool IsReplay
+    {
+        get
+        {
+            return s_isReplay;
+        }
+    }
+
+
     public static bool s_isProfile = true;
 
     static List<Dictionary<string, string>> s_eventStreamSerialize;
@@ -396,6 +406,14 @@ public class DevelopReplayManager
 
         GUILayout.EndScrollView();
 
+        if (GUILayout.Button("复制到剪贴板"))
+        {
+            TextEditor tx = new TextEditor();
+            tx.text = LogContent;
+            tx.OnFocus();
+            tx.Copy();
+        }
+
         if (GUILayout.Button("返回上层"))
         {
             isShowLog = false;
@@ -646,6 +664,8 @@ public class DevelopReplayManager
         get { return DevelopReplayManager.s_currentTime; }
         //set { DevelopReplayManager.s_currentTime = value; }
     }
+
+
 
     public static void OnReplayUpdate()
     {

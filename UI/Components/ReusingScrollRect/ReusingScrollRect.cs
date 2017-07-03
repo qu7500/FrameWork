@@ -2,6 +2,7 @@
 using System.Collections;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using System;
 
 public class ReusingScrollRect : ScrollRectInput
 {
@@ -14,7 +15,7 @@ public class ReusingScrollRect : ScrollRectInput
 
     public List<Dictionary<string, object>> m_datas = new List<Dictionary<string, object>>();
     public List<ReusingScrollItemBase> m_items = new List<ReusingScrollItemBase>();
-    public List<ReusingScrollItemBase> m_itemCatchs = new List<ReusingScrollItemBase>();
+    public List<ReusingScrollItemBase> m_itemCaches = new List<ReusingScrollItemBase>();
 
     RectTransform m_rectTransform;
 
@@ -27,6 +28,12 @@ public class ReusingScrollRect : ScrollRectInput
 
     public  void Init(string UIEventKey,string itemName)
     {
+        if (content == null)
+        {
+            throw new Exception("SetItemDisplay Exception: content is null !");
+        }
+
+
         base.Init(UIEventKey);
 
         m_ItemName = itemName;
@@ -41,19 +48,21 @@ public class ReusingScrollRect : ScrollRectInput
         m_itemSize = m_itemPrefab.GetComponent<RectTransform>().sizeDelta;
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
+        base.Dispose();
+
         for (int i = 0; i < m_items.Count; i++)
         {
             GameObjectManager.DestroyGameObjectByPool(m_items[i].gameObject);
         }
         m_items.Clear();
 
-        for (int i = 0; i < m_itemCatchs.Count; i++)
+        for (int i = 0; i < m_itemCaches.Count; i++)
         {
-            GameObjectManager.DestroyGameObjectByPool(m_itemCatchs[i].gameObject);
+            GameObjectManager.DestroyGameObjectByPool(m_itemCaches[i].gameObject);
         }
-        m_itemCatchs.Clear();
+        m_itemCaches.Clear();
     }
 
 
@@ -82,11 +91,21 @@ public class ReusingScrollRect : ScrollRectInput
 
     public Vector3 GetItemAnchorPos(int index)
     {
+        if (content == null)
+        {
+            throw new Exception("SetItemDisplay Exception: content is null !");
+        }
+
         return GetItemPos(index) + GetRealItemOffset() + content.localPosition;
     }
 
     public void SetPos(Vector3 pos)
     {
+        if (content == null)
+        {
+            throw new Exception("SetItemDisplay Exception: content is null !");
+        }
+
         content.anchoredPosition3D = pos;
 
         SetItemDisplay();
@@ -151,8 +170,6 @@ public class ReusingScrollRect : ScrollRectInput
         }
 
         content.sizeDelta = size;
-
-        Debug.Log("content " + content.sizeDelta);
     }
 
     void UpdateIndexList(int count)
@@ -181,6 +198,12 @@ public class ReusingScrollRect : ScrollRectInput
     int m_startPos = 0;
     void SetItemDisplay()
     {
+        if(content == null)
+        {
+            throw new Exception("SetItemDisplay Exception: content is null !");
+        }
+
+
         m_clip = false;
         //计算已显示的哪些需要隐藏
         for (int i = 0; i < m_items.Count; i++)
@@ -209,7 +232,7 @@ public class ReusingScrollRect : ScrollRectInput
 
                 //隐藏并移到缓存
                 itemTmp.gameObject.SetActive(false);
-                m_itemCatchs.Add(itemTmp);
+                m_itemCaches.Add(itemTmp);
 
                 m_indexList[itemTmp.m_index].status =  ReusingStatus.Hide;
             }
@@ -259,12 +282,12 @@ public class ReusingScrollRect : ScrollRectInput
 
         itemTmp.SetContent(index,data);
 
-        itemTmp.m_RectTransform.pivot = GetPivot();
-        itemTmp.m_RectTransform.anchorMin = GetMinAchors();
-        itemTmp.m_RectTransform.anchorMax = GetMaxAchors();
-        itemTmp.m_RectTransform.sizeDelta = GetItemSize();
+        itemTmp.RectTransform.pivot = GetPivot();
+        itemTmp.RectTransform.anchorMin = GetMinAchors();
+        itemTmp.RectTransform.anchorMax = GetMaxAchors();
+        itemTmp.RectTransform.sizeDelta = GetItemSize();
 
-        itemTmp.m_RectTransform.anchoredPosition3D = GetItemPos(index);
+        itemTmp.RectTransform.anchoredPosition3D = GetItemPos(index);
 
         itemTmp.m_index = index;
     }
@@ -273,12 +296,12 @@ public class ReusingScrollRect : ScrollRectInput
     {
         ReusingScrollItemBase result = null;
 
-        if (m_itemCatchs.Count>0)
+        if (m_itemCaches.Count>0)
         {
-            result = m_itemCatchs[0];
+            result = m_itemCaches[0];
             result.gameObject.SetActive(true);
             result.OnShow();
-            m_itemCatchs.RemoveAt(0);
+            m_itemCaches.RemoveAt(0);
 
             m_items.Add(result);
             return result;

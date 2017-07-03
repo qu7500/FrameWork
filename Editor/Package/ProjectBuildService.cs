@@ -47,6 +47,8 @@ class ProjectBuildService : Editor
 
 #if UNITY_WEBGL
             return path + "/" + ApplicationMode;
+#elif UNITY_IOS
+            return path += "/" + ChannelName + "/" + ApplicationMode;
 #else
             return path += "/" + ChannelName + "/" + ApplicationMode + "/";
 #endif
@@ -182,6 +184,12 @@ class ProjectBuildService : Editor
         {
             AddScriptDefine("USE_BUNDLE");
             BundlePackage();
+
+#if UNITY_IOS
+            //删除_Res和_Doc
+            FileTool.SafeDeleteDirectory(Application.dataPath + "/_Res");
+            FileTool.SafeDeleteDirectory(Application.dataPath + "/_Doc");
+#endif
         }
         else
         {
@@ -206,7 +214,7 @@ class ProjectBuildService : Editor
         FileTool.SafeDeleteDirectory(Application.dataPath + "/Resources");
     }
 
-    #endregion
+#endregion
 
     #region Android
 
@@ -240,6 +248,41 @@ class ProjectBuildService : Editor
         }
 
         BuildPipeline.BuildPlayer(GetBuildScenes(), path, BuildTarget.Android, option);
+    }
+
+#endregion
+
+    #region
+
+    static void BuildForIOS()
+    {
+        //输出日志
+        PrintDebug();
+
+        //使用Lua
+        SetLua(IsUseLua);
+
+        //发布模式
+        SetApplicationMode(ApplicationMode);
+
+        //使用Resource或者使用Bundle
+        UseResourcesOrBundle(IsUseAssetsBundle);
+
+        //切换渠道
+        ChangeChannel(ChannelName);
+
+        //设置编译指令
+        ApplyScriptDefine();
+
+        //打包
+
+        BuildOptions option = BuildOptions.None;
+        if (ApplicationMode == AppMode.Release)
+        {
+            option = BuildOptions.Il2CPP;
+        }
+
+        BuildPipeline.BuildPlayer(GetBuildScenes(), ExportPath, BuildTarget.iOS, option);
     }
 
 #endregion
@@ -378,5 +421,5 @@ class ProjectBuildService : Editor
         PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, define);
     }
 
-    #endregion
+#endregion
 }
