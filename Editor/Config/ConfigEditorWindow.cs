@@ -6,7 +6,7 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using System.IO;
-using MiniJSON;
+using FrameWork;
 
 public class ConfigEditorWindow : EditorWindow
 {
@@ -46,7 +46,7 @@ public class ConfigEditorWindow : EditorWindow
 
         AddConfigGUI();
 
-        CleanCatchGUI();
+        CleanCacheGUI();
 
 
         EditorGUILayout.EndVertical();
@@ -157,9 +157,9 @@ public class ConfigEditorWindow : EditorWindow
         }
     }
 
-    public void CleanCatchGUI()
+    public void CleanCacheGUI()
     {
-        ConfigManager.CleanCatch();
+        ConfigManager.CleanCache();
     }
 
     #endregion
@@ -301,7 +301,7 @@ public class ConfigEditorWindow : EditorWindow
                 }
                 catch(Exception e)
                 {
-                    GUILayout.Label(e.ToString(), EditorGUIStyleData.s_ErrorMessageLabel);
+                    GUILayout.Label(e.ToString(), EditorGUIStyleData.ErrorMessageLabel);
                 }
 
             }
@@ -350,6 +350,14 @@ public class ConfigEditorWindow : EditorWindow
                 m_configNameList.Add(configName);
             }
         }
+    }
+
+    public static string GetConfigPath(string configName)
+    {
+        return PathTool.GetAbsolutePath(ResLoadLocation.Resource,
+            PathTool.GetRelativelyPath(ConfigManager.c_directoryName,
+                                                configName,
+                                                ConfigManager.c_expandName));
     }
 
     #endregion

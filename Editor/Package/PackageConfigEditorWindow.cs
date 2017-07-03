@@ -328,12 +328,12 @@ public class BundleConfigEditorWindow : EditorWindow
     {
         for (int i = 0; i < package.errorMsg.Count; i++)
         {
-            EditorGUILayout.LabelField("ERROR: " + package.errorMsg[i], EditorGUIStyleData.s_ErrorMessageLabel);
+            EditorGUILayout.LabelField("ERROR: " + package.errorMsg[i], EditorGUIStyleData.ErrorMessageLabel);
         }
 
         for (int i = 0; i < package.warnMsg.Count; i++)
         {
-            EditorGUILayout.LabelField("WARN: " + package.warnMsg[i], EditorGUIStyleData.s_WarnMessageLabel);
+            EditorGUILayout.LabelField("WARN: " + package.warnMsg[i], EditorGUIStyleData.WarnMessageLabel);
         }
     }
 
@@ -411,12 +411,12 @@ public class BundleConfigEditorWindow : EditorWindow
         {
             for (int j = 0; j < relyPackages[i].warnMsg.Count; j++)
             {
-                EditorGUILayout.LabelField("WARN: " + relyPackages[i].warnMsg[j], EditorGUIStyleData.s_WarnMessageLabel);
+                EditorGUILayout.LabelField("WARN: " + relyPackages[i].warnMsg[j], EditorGUIStyleData.WarnMessageLabel);
             }
 
             for (int j = 0; j < relyPackages[i].errorMsg.Count; j++)
             {
-                EditorGUILayout.LabelField("ERROR: " + relyPackages[i].errorMsg[j], EditorGUIStyleData.s_ErrorMessageLabel);
+                EditorGUILayout.LabelField("ERROR: " + relyPackages[i].errorMsg[j], EditorGUIStyleData.ErrorMessageLabel);
             }
         }
 
@@ -424,12 +424,12 @@ public class BundleConfigEditorWindow : EditorWindow
         {
             for (int j = 0; j < bundles[i].warnMsg.Count; j++)
             {
-                EditorGUILayout.LabelField("WARN: " + bundles[i].warnMsg[j], EditorGUIStyleData.s_WarnMessageLabel);
+                EditorGUILayout.LabelField("WARN: " + bundles[i].warnMsg[j], EditorGUIStyleData.WarnMessageLabel);
             }
 
             for (int j = 0; j < bundles[i].errorMsg.Count; j++)
             {
-                EditorGUILayout.LabelField("ERROR: " + bundles[i].errorMsg[j], EditorGUIStyleData.s_ErrorMessageLabel);
+                EditorGUILayout.LabelField("ERROR: " + bundles[i].errorMsg[j], EditorGUIStyleData.ErrorMessageLabel);
             }
         }
     }
@@ -776,7 +776,7 @@ public class BundleConfigEditorWindow : EditorWindow
 
     #region 各种判断存在
 
-    Dictionary<string, EditPackageConfig> m_BundleDictCatch = new Dictionary<string, EditPackageConfig>();
+    Dictionary<string, EditPackageConfig> m_BundleDictCache = new Dictionary<string, EditPackageConfig>();
 
     /// <summary>
     /// 判断一个资源是否已经在bundle列表中
@@ -785,7 +785,7 @@ public class BundleConfigEditorWindow : EditorWindow
     /// <returns>是否存在</returns>
     bool isExist_AllBundle(EditorObject obj)
     {
-        if (obj != null && obj.obj != null && m_BundleDictCatch != null && m_BundleDictCatch.ContainsKey(obj.obj.name))
+        if (obj != null && obj.obj != null && m_BundleDictCache != null && m_BundleDictCache.ContainsKey(obj.obj.name))
         {
             return true;
         }
@@ -1009,7 +1009,7 @@ public class BundleConfigEditorWindow : EditorWindow
         float time = Time.realtimeSinceStartup;
 
         bundles.Clear();
-        m_BundleDictCatch.Clear();
+        m_BundleDictCache.Clear();
 
         RecursionDirectory(resourcePath);
 
@@ -1066,9 +1066,13 @@ public class BundleConfigEditorWindow : EditorWindow
         objTmp.obj = obj;
         objTmp.path = GetObjectPath(obj);
 
-        if (isExist_AllBundle(objTmp) || !IsPackage(objTmp))
+        if (isExist_AllBundle(objTmp))
         {
-            //Debug.Log(obj.name + " 已经存在！");
+            Debug.LogWarning(obj.name + " 已经存在！");
+        }
+        else if(!IsPackage(objTmp))
+        {
+            //Debug.LogWarning(obj.name + " 资源不打包！");
         }
         else
         {
@@ -1127,7 +1131,7 @@ public class BundleConfigEditorWindow : EditorWindow
 
             bundles.Add(EditPackageConfigTmp);
 
-            m_BundleDictCatch.Add(EditPackageConfigTmp.name, EditPackageConfigTmp);
+            m_BundleDictCache.Add(EditPackageConfigTmp.name, EditPackageConfigTmp);
         }
     }
 
@@ -1736,7 +1740,7 @@ public class BundleConfigEditorWindow : EditorWindow
         EditorUtil.WriteStringByFile(
             PathTool.GetAbsolutePath(ResLoadLocation.Resource,
             ResourcesConfigManager.c_ManifestFileName + "." + ConfigManager.c_expandName)
-            , MiniJSON.Json.Serialize(data));
+            , FrameWork.Json.Serialize(data));
 
         Debug.Log("保存完毕 序列化时间: " + (Time.realtimeSinceStartup - time));
 
@@ -1794,9 +1798,14 @@ public class EditorObject
 
 public class PathPoint
 {
+    //是否折叠
     public bool isFold = false;
+    //当前节点的名字
     public string s_nowPathPoint;
+    //上一个节点（父节点）
     public PathPoint lastPathPoint;
+    //子节点列表
     public Dictionary<string, PathPoint> nextPathPoint;
+    //改路径点上面的bundle
     public List<EditPackageConfig> bundles;
 }
