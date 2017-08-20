@@ -23,7 +23,7 @@ class ProjectBuildService : Editor
             }
             return "Android";
 #elif UNITY_IOS
-            return "Ios";
+            return "IOS";
 #else
             return "General";
 #endif
@@ -220,6 +220,8 @@ class ProjectBuildService : Editor
 
     static void BuildForAndroid()
     {
+        SwitchPlatform(BuildTarget.Android);
+
         //输出日志
         PrintDebug();
 
@@ -238,6 +240,16 @@ class ProjectBuildService : Editor
         //设置编译指令
         ApplyScriptDefine();
 
+        //设置签名
+            //签名路径
+            PlayerSettings.Android.keystoreName = "";
+            //密钥密码
+            PlayerSettings.Android.keystorePass = "";
+            //密钥别名
+            PlayerSettings.Android.keyaliasName = "";
+            //别名密码
+            PlayerSettings.Android.keyaliasPass = "";
+
         //打包
         string path = ExportPath + "/" + GetPackageName() + ".apk";
 
@@ -250,12 +262,14 @@ class ProjectBuildService : Editor
         BuildPipeline.BuildPlayer(GetBuildScenes(), path, BuildTarget.Android, option);
     }
 
-#endregion
+    #endregion
 
-    #region
+    #region IOS
 
     static void BuildForIOS()
     {
+        SwitchPlatform(BuildTarget.iOS);
+
         //输出日志
         PrintDebug();
 
@@ -291,6 +305,8 @@ class ProjectBuildService : Editor
 
     static void BuildForWEBGL()
     {
+        SwitchPlatform(BuildTarget.WebGL);
+
         //输出日志
         PrintDebug();
 
@@ -421,5 +437,17 @@ class ProjectBuildService : Editor
         PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, define);
     }
 
-#endregion
+    /// <summary>
+    /// 切换平台
+    /// </summary>
+    /// <param name="target"></param>
+    public static void SwitchPlatform(BuildTarget target)
+    {
+        if (EditorUserBuildSettings.activeBuildTarget != target)
+        {
+            EditorUserBuildSettings.SwitchActiveBuildTarget(target);
+        }
+    }
+
+    #endregion
 }
