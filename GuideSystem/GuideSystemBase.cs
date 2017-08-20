@@ -45,11 +45,11 @@ namespace FrameWork.GuideSystem
         /// <summary>
         /// 新手引导记录表
         /// </summary>
-        Dictionary<string, string> m_guideRecord = new Dictionary<string, string>();
+        //Dictionary<string, string> m_guideRecord = new Dictionary<string, string>();
 
         DataTable m_guideData;
         protected SingleData m_currentGuideData;
-        int m_currentGuideIndex = 0;
+        //int m_currentGuideIndex = 0;
         string m_currentGuideKey = "";
 
         #region 外部调用
@@ -129,7 +129,7 @@ namespace FrameWork.GuideSystem
         }
 
         /// <summary>
-        /// 判断是否满足引导开始条件
+        /// 判断是否满足引导开始条件,默认判断是不是开始点
         /// </summary>
         /// <returns></returns>
         protected virtual bool GuideStartCondition(SingleData data)
@@ -276,7 +276,7 @@ namespace FrameWork.GuideSystem
 
         void ReceviceGuideRecord(Dictionary<string, string> record)
         {
-            m_guideRecord = record;
+            //m_guideRecord = record;
         }
 
         #endregion
@@ -306,10 +306,10 @@ namespace FrameWork.GuideSystem
 
             ApplicationManager.s_OnApplicationUpdate += Update;
 
+            OnStart();
+
             SetCurrent(LoadFirstGuide());
             GuideLogic();
-
-            OnStart();
         }
 
         void EndGuide()
@@ -439,13 +439,13 @@ namespace FrameWork.GuideSystem
         {
             if (data != null)
             {
-                m_currentGuideIndex = m_guideData.TableIDs.IndexOf(data.m_SingleDataKey);
+                //m_currentGuideIndex = m_guideData.TableIDs.IndexOf(data.m_SingleDataKey);
                 m_currentGuideData = data;
                 m_currentGuideKey = m_currentGuideData.m_SingleDataKey;
             }
             else
             {
-                m_currentGuideIndex = -1;
+                //m_currentGuideIndex = -1;
                 m_currentGuideData = null;
                 m_currentGuideKey = "";
             }
@@ -455,72 +455,72 @@ namespace FrameWork.GuideSystem
 
         #region 读取数据
 
-        bool GetGuideSwitch()
+        protected bool GetGuideSwitch()
         {
             return RecordManager.GetBoolRecord(c_guideRecordName, c_guideSwitchName,true);
         }
 
-        string GetPremise(SingleData data)
+        protected string GetPremise(SingleData data)
         {
             return data.GetString(c_PremiseKey);
         }
 
-        string GetNextGuideNeme(SingleData data)
+        protected string GetNextGuideNeme(SingleData data)
         {
             return data.GetString(c_NextGuideNameKey);
         }
 
-        bool GetGuideStartPoint(SingleData data)
+        protected bool GetGuideStartPoint(SingleData data)
         {
             return data.GetBool(c_guideStartPoint);
         }
 
-        bool GetGuideEndPoint(SingleData data)
+        protected bool GetGuideEndPoint(SingleData data)
         {
             return data.GetBool(c_guideEndPoint);
         }
 
-        bool GetCallToNext(SingleData data)
+        protected bool GetCallToNext(SingleData data)
         {
             return data.GetBool(c_CallToNextKey);
         }
 
-        bool GetClickToNext(SingleData data)
+        protected bool GetClickToNext(SingleData data)
         {
             return data.GetBool(c_ClickToNextKey);
         }
 
-        string GetGuideWindowName(SingleData data)
+        protected string GetGuideWindowName(SingleData data)
         {
             return data.GetString(c_GuideWindowNameKey);
         }
 
-        string[] GetGuideObjectNames(SingleData data)
+        protected string[] GetGuideObjectNames(SingleData data)
         {
             return data.GetStringArray(c_GuideObjectNameKey);
         }
 
-        string[] GetGuideItemNames(SingleData data)
+        protected string[] GetGuideItemNames(SingleData data)
         {
             return data.GetStringArray(c_GuideItemNameKey);
         }
 
-        string GetTipContent(SingleData data)
+        protected string GetTipContent(SingleData data)
         {
             return data.GetString(c_TipContentKey);
         }
 
-        Vector3 GetTipContentPos(SingleData data)
+        protected Vector3 GetTipContentPos(SingleData data)
         {
             return data.GetVector3(c_TipContentPosKey);
         }
 
-        float GetMaskAlpha(SingleData data)
+        protected float GetMaskAlpha(SingleData data)
         {
             return data.GetFloat(c_MaskAlphaKey);
         }
 
-        SingleData GetNextGuideData(SingleData data)
+        protected SingleData GetNextGuideData(SingleData data)
         {
             string next = GetNextGuideNeme(data);
 
@@ -538,7 +538,7 @@ namespace FrameWork.GuideSystem
             }
         }
 
-        SingleData GetGuideDataByIndex(int index)
+        protected SingleData GetGuideDataByIndex(int index)
         {
             if (m_guideData.TableIDs.Count > index)
             {
@@ -551,7 +551,7 @@ namespace FrameWork.GuideSystem
             }
         }
 
-        SingleData GetGuideDataByName(string key)
+        protected SingleData GetGuideDataByName(string key)
         {
             if (!m_guideData.ContainsKey(key))
             {

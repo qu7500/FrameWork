@@ -137,6 +137,7 @@ public class UIBase : MonoBehaviour
     Dictionary<string, UGUIJoyStick> m_joySticks = new Dictionary<string, UGUIJoyStick>();
     Dictionary<string, UGUIJoyStickBase> m_joySticks_ro = new Dictionary<string, UGUIJoyStickBase>();
     Dictionary<string, LongPressAcceptor> m_longPressList = new Dictionary<string, LongPressAcceptor>();
+    Dictionary<string, DragAcceptor> m_dragList = new Dictionary<string, DragAcceptor>();
 
     public bool HaveObject(string name)
     {
@@ -154,7 +155,14 @@ public class UIBase : MonoBehaviour
 
         if (m_objects.ContainsKey(name))
         {
-            return m_objects[name];
+            GameObject go = m_objects[name];
+
+            if (go == null)
+            {
+                throw new Exception("UIWindowBase GetGameObject error: " + UIName + " m_objects[" + name + "] is null !!");
+            }
+
+            return go;
         }
         else
         {
@@ -451,6 +459,24 @@ public class UIBase : MonoBehaviour
         m_longPressList.Add(name, tmp);
         return tmp;
     }
+
+    public DragAcceptor GetDragComp(string name)
+    {
+        if (m_dragList.ContainsKey(name))
+        {
+            return m_dragList[name];
+        }
+
+        DragAcceptor tmp = GetGameObject(name).GetComponent<DragAcceptor>();
+
+        if (tmp == null)
+        {
+            throw new Exception(m_EventNames + " GetDragComp ->" + name + "<- is Null !");
+        }
+
+        m_dragList.Add(name, tmp);
+        return tmp;
+    }
     #endregion
 
     #endregion
@@ -462,29 +488,49 @@ public class UIBase : MonoBehaviour
 
     protected List<InputEventRegisterInfo<InputUIOnClickEvent>> m_OnClickEvents = new List<InputEventRegisterInfo<InputUIOnClickEvent>>();
     protected List<InputEventRegisterInfo<InputUILongPressEvent>> m_LongPressEvents = new List<InputEventRegisterInfo<InputUILongPressEvent>>();
+    protected List<InputEventRegisterInfo<InputUIOnDragEvent>> m_DragEvents = new List<InputEventRegisterInfo<InputUIOnDragEvent>>();
+    protected List<InputEventRegisterInfo<InputUIOnBeginDragEvent>> m_BeginDragEvents = new List<InputEventRegisterInfo<InputUIOnBeginDragEvent>>();
+    protected List<InputEventRegisterInfo<InputUIOnEndDragEvent>> m_EndDragEvents = new List<InputEventRegisterInfo<InputUIOnEndDragEvent>>();
 
     public virtual void RemoveAllListener()
     {
-        for (int i = 0; i < m_OnClickEvents.Count; i++)
-        {
-            m_OnClickEvents[i].RemoveListener();
-        }
-
-        m_OnClickEvents.Clear();
-
         for (int i = 0; i < m_EventListeners.Count; i++)
         {
             m_EventListeners[i].RemoveListener();
         }
-
         m_EventListeners.Clear();
+
+        for (int i = 0; i < m_OnClickEvents.Count; i++)
+        {
+            m_OnClickEvents[i].RemoveListener();
+        }
+        m_OnClickEvents.Clear();
 
         for (int i = 0; i < m_LongPressEvents.Count; i++)
         {
             m_LongPressEvents[i].RemoveListener();
         }
-
         m_LongPressEvents.Clear();
+
+        #region 拖动事件
+        for (int i = 0; i < m_DragEvents.Count; i++)
+        {
+            m_DragEvents[i].RemoveListener();
+        }
+        m_DragEvents.Clear();
+
+        for (int i = 0; i < m_BeginDragEvents.Count; i++)
+        {
+            m_BeginDragEvents[i].RemoveListener();
+        }
+        m_BeginDragEvents.Clear();
+
+        for (int i = 0; i < m_EndDragEvents.Count; i++)
+        {
+            m_EndDragEvents[i].RemoveListener();
+        }
+        m_EndDragEvents.Clear();
+    #endregion
     }
 
     public void AddOnClickListener(string buttonName, InputEventHandle<InputUIOnClickEvent> callback, string parm = null)
@@ -503,6 +549,24 @@ public class UIBase : MonoBehaviour
     {
         InputEventRegisterInfo<InputUILongPressEvent> info = InputUIEventProxy.AddLongPressListener(GetLongPressComp(compName), UIEventKey, compName, parm, callback);
         m_LongPressEvents.Add(info);
+    }
+
+    public void AddDragListener(string compName, InputEventHandle<InputUIOnDragEvent> callback, string parm = null)
+    {
+        InputEventRegisterInfo<InputUIOnDragEvent> info = InputUIEventProxy.AddOnDragListener(GetDragComp(compName), UIEventKey, compName, parm, callback);
+        m_DragEvents.Add(info);
+    }
+
+    public void AddBeginDragListener(string compName, InputEventHandle<InputUIOnBeginDragEvent> callback, string parm = null)
+    {
+        InputEventRegisterInfo<InputUIOnBeginDragEvent> info = InputUIEventProxy.AddOnBeginDragListener(GetDragComp(compName), UIEventKey, compName, parm, callback);
+        m_BeginDragEvents.Add(info);
+    }
+
+    public void AddEndDragListener(string compName, InputEventHandle<InputUIOnEndDragEvent> callback, string parm = null)
+    {
+        InputEventRegisterInfo<InputUIOnEndDragEvent> info = InputUIEventProxy.AddOnEndDragListener(GetDragComp(compName), UIEventKey, compName, parm, callback);
+        m_EndDragEvents.Add(info);
     }
 
     public void AddEventListener(Enum EventEnum, EventHandle handle)
@@ -573,8 +637,12 @@ public class UIBase : MonoBehaviour
         }
     }
 
+    public void CleanItem()
+    {
+        CleanItem(true);
+    }
 
-    public void CleanItem(bool isActive = true)
+    public void CleanItem(bool isActive)
     {
         for (int i = 0; i < m_ChildList.Count; i++)
         {
@@ -628,6 +696,11 @@ public class UIBase : MonoBehaviour
         GetImage(ImageID).color = color;
     }
 
+    public void SetTextColor(string TextID,Color color)
+    {
+        GetText(TextID).color = color;
+    }
+
     public void SetImageAlpha(string ImageID, float alpha)
     {
         Color col = GetImage(ImageID).color;
@@ -662,6 +735,13 @@ public class UIBase : MonoBehaviour
     public void SetActive(string gameObjectID, bool isShow)
     {
         GetGameObject(gameObjectID).SetActive(isShow);
+    }
+    /// <summary>
+    /// Only Button
+    /// </summary>
+    public void SetEnabeled(string ID,bool enable)
+    {
+        GetButton(ID).enabled = enable;
     }
 
     public void SetRectWidth(string TextID, float value, float height)
@@ -730,9 +810,21 @@ public class UIBase : MonoBehaviour
         status.OldSortingOrder = canvas.sortingOrder;
         status.oldSortingLayerName = canvas.sortingLayerName;
 
+        //如果检测到目标对象
+        bool oldActive = go.activeSelf;
+        if(!oldActive)
+        {
+            go.SetActive(true);
+        }
+
         canvas.overrideSorting = true;
         canvas.sortingOrder = order;
         canvas.sortingLayerName = "Guide";
+
+        if(!oldActive)
+        {
+            go.SetActive(false);
+        }
 
         m_GuideList.Add(go);
         m_CreateCanvasDict.Add(go, status);
@@ -779,6 +871,7 @@ public class UIBase : MonoBehaviour
             CancelGuideModel(m_GuideList[i]);
         }
 
+        m_GuideList.Clear();
         m_CreateCanvasDict.Clear();
     }
 

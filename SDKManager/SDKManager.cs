@@ -371,19 +371,25 @@ public class SDKManager
     /// 数据上报
     /// </summary>
     /// <param name="data"></param>
-    public static void Log(string eventID,Dictionary<string,object> data)
+    public static void Log(string eventID, Dictionary<string, object> data)
     {
-        try
+        if(s_logServiceList == null)
         {
-            for (int i = 0; i < s_logServiceList.Count; i++)
+            throw new Exception("logServiceList is null ,please check SDKManager Init");
+        }
+
+        for (int i = 0; i < s_logServiceList.Count; i++)
+        {
+            try
             {
                 s_logServiceList[i].Log(eventID, data);
             }
+            catch (Exception e)
+            {
+                Debug.LogError("SDKManager Log Exception: " + e.ToString());
+            }
         }
-        catch (Exception e)
-        {
-            Debug.LogError("SDKManager Log Exception: " + e.ToString());
-        }
+
     }
     #endregion
 
@@ -551,6 +557,14 @@ public class SchemeData
     public List<SDKConfigData> ADScheme    = new List<SDKConfigData>();
     public List<SDKConfigData> PayScheme   = new List<SDKConfigData>();
     public List<SDKConfigData> OtherScheme = new List<SDKConfigData>();
+
+    public string AndroidkeystoreName; //Android 签名路径
+    public string AndroidkeystorePass; //Android 密钥密码
+    public string AndroidkeyaliasName; //Android 密钥别名
+    public string AndroidkeyaliasPass; //Android 别名密码
+
+    //图标
+
 }
 [System.Serializable]
 public class SDKConfigData

@@ -109,13 +109,15 @@ public class ApplicationManager : MonoBehaviour
         }
     }
 
-#region 程序生命周期事件派发
+    #region 程序生命周期事件派发
  
     public static ApplicationVoidCallback s_OnApplicationQuit = null;
     public static ApplicationBoolCallback s_OnApplicationPause = null;
     public static ApplicationBoolCallback s_OnApplicationFocus = null;
     public static ApplicationVoidCallback s_OnApplicationUpdate = null;
+    public static ApplicationVoidCallback s_OnApplicationFixedUpdate = null;
     public static ApplicationVoidCallback s_OnApplicationOnGUI = null;
+    public static ApplicationVoidCallback s_OnApplicationOnDrawGizmos = null;
 
     void OnApplicationQuit()
     {
@@ -172,15 +174,27 @@ public class ApplicationManager : MonoBehaviour
             s_OnApplicationUpdate();
     }
 
+    private void FixedUpdate()
+    {
+        if (s_OnApplicationFixedUpdate != null)
+            s_OnApplicationFixedUpdate();
+    }
+
     void OnGUI()
     {
         if (s_OnApplicationOnGUI != null)
             s_OnApplicationOnGUI();
     }
 
-#endregion
+    private void OnDrawGizmos()
+    {
+        if (s_OnApplicationOnDrawGizmos != null)
+            s_OnApplicationOnDrawGizmos();
+    }
 
-#region 程序启动细节
+    #endregion
+
+    #region 程序启动细节
     /// <summary>
     /// 设置资源加载方式
     /// </summary>
