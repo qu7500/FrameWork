@@ -3,26 +3,32 @@ using System.Collections;
 using System;
 using System.Collections.Generic;
 using FrameWork;
+using System.Net.Sockets;
 
 public class NetworkManager 
 {
     static INetworkInterface s_network;
 
-    private static bool s_isConnect;
-
     public static bool IsConnect
     {
-        get { return NetworkManager.s_isConnect; }
-        set { NetworkManager.s_isConnect = value; }
+        get {
+            if(s_network == null)
+            {
+                return false;
+            }
+
+            return s_network.isConnect;
+        }
     }
 
-    public static void Init<T>() where T : INetworkInterface,new ()
+    public static void Init<T>(ProtocolType protocolType = ProtocolType.Tcp) where T : INetworkInterface,new ()
     {
         //提前加载网络事件派发器，避免异步冲突
         InputManager.LoadDispatcher<InputNetworkConnectStatusEvent>();
         InputManager.LoadDispatcher<InputNetworkMessageEvent>();
 
         s_network = new T();
+        s_network.m_protocolType = protocolType;
         s_network.Init();
         s_network.m_messageCallBack = ReceviceMeaasge;
         s_network.m_ConnectStatusCallback = ConnectStatusChange;
@@ -115,7 +121,14 @@ public class NetworkManager
 
     static void ReceviceMeaasge(NetWorkMessage message)
     {
-        s_messageList.Add(message);
+        if(message.m_MessageType != null)
+        {
+            s_messageList.Add(message);
+        }
+        else
+        {
+            Debug.LogError("ReceviceMeaasge m_MessageType is null !");
+        }
     }
 
     static void Dispatch(NetWorkMessage msg)
@@ -126,19 +139,12 @@ public class NetworkManager
         }
         catch (Exception e)
         {
-            if (msg!= null )
+            string messageContent = "";
+            if (msg.m_data != null)
             {
-                string messageContent = "";
-                if(msg.m_data != null)
-                {
-                    messageContent = Json.Serialize(msg.m_data);
-                }
-                Debug.LogError("Message Error: MessageType is ->" + msg.m_MessageType + "<- MessageContent is ->" + messageContent + "<-\n" + e.ToString());
+                messageContent = Json.Serialize(msg.m_data);
             }
-            else
-            {
-                Debug.LogError("Message Error: Message is null" );
-            }
+            Debug.LogError("Message Error: MessageType is ->" + msg.m_MessageType + "<- MessageContent is ->" + messageContent + "<-\n" + e.ToString());
         }
     }
 
@@ -149,15 +155,6 @@ public class NetworkManager
 
     static void Dispatch(NetworkState status)
     {
-        if (status == NetworkState.Connected)
-        {
-            s_isConnect = true;
-        }
-        else
-        {
-            s_isConnect = false;
-        }
-
         InputNetworkEventProxy.DispatchStatusEvent(status);
     }
 
@@ -165,17 +162,27 @@ public class NetworkManager
 
     static List<NetworkState> s_statusList = new List<NetworkState>();
     static List<NetWorkMessage> s_messageList = new List<NetWorkMessage>();
+    const int MaxDealCount = 10;
 
     //将消息的处理并入主线程
     static void Update()
     {
-        if (s_messageList.Count >0)
+        if (s_messageList.Count > 0)
         {
+            int dealCount = 0;
             for (int i = 0; i < s_messageList.Count; i++)
             {
+                dealCount++;
                 Dispatch(s_messageList[i]);
+
+                s_messageList.RemoveAt(i);
+                i--;
+
+                if (dealCount >= MaxDealCount)
+                {
+                    break;
+                }
             }
-            s_messageList.Clear();
         }
 
         if (s_statusList.Count > 0)
@@ -202,7 +209,7 @@ public enum NetworkState
     FaildToConnect,
 }
 
-public class NetWorkMessage
+public struct NetWorkMessage
 {
    public string m_MessageType;
 

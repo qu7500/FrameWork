@@ -128,20 +128,27 @@ public class ProtocolService : INetworkInterface
 #else
 
         m_connThread = null;
-        m_connThread = new Thread(new ThreadStart(requestConnect));
+        m_connThread = new Thread(new ThreadStart(RequestConnect));
         m_connThread.Start();
 
 #endif
     }
 #if !(!UNITY_EDITOR && UNITY_WEBGL)
     //请求数据服务连接线程
-    void requestConnect()
+    void RequestConnect()
     {
         try
         {
             m_ConnectStatusCallback(NetworkState.Connecting);
 
-            m_Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            SocketType socketType = SocketType.Stream;
+
+            if (m_protocolType == ProtocolType.Udp)
+            {
+                socketType = SocketType.Dgram;
+            }
+
+            m_Socket = new Socket(AddressFamily.InterNetwork, socketType, m_protocolType);
             IPAddress ip = IPAddress.Parse(m_IPaddress);
             
             IPEndPoint ipe = new IPEndPoint(ip, m_port);
@@ -210,6 +217,7 @@ public class ProtocolService : INetworkInterface
         }
         catch (Exception e)
         {
+            isConnect = false;
             Debug.LogError("Send Message Error : " + e.Message);
         }
 #else
@@ -233,7 +241,7 @@ public class ProtocolService : INetworkInterface
         msg.WriteShort(method);
 
         if (message != null)
-            msg.bytes.AddRange(message);
+            msg.Bytes.AddRange(message);
         else
             msg.WriteInt(0);
 
@@ -522,18 +530,30 @@ public class ProtocolService : INetworkInterface
 
     NetWorkMessage  Analysis(ByteArray bytes)
     {
-        NetWorkMessage msg = GetMessageByPool();
-        //Debug.Log("ReceiveDataLoad : " + BitConverter.ToString(bytes.Buffer));
-        //Debug.Log("bytes length " + bytes.bytes.Count);
+        NetWorkMessage msg = new NetWorkMessage();
         bytes.ReadUShort(); //消息长度
         bytes.ReadByte();  //模块名
 
         int methodIndex = bytes.ReadUShort(); //方法名
 
-        msg.m_MessageType = m_methodNameInfo[methodIndex];
+        //Debug.Log("methodIndex " + methodIndex);
+        //Debug.Log("ReceiveDataLoad : " + BitConverter.ToString(bytes.Buffer));
+        try
+        {
+            msg.m_MessageType = m_methodNameInfo[methodIndex];
+        }
+        catch
+        {
+            throw new Exception("没有找到消息号！ " + methodIndex);
+        }
+
         int re_len = bytes.Length - 5;
         msg.m_data = AnalysisData(msg.m_MessageType, bytes.ReadBytes(re_len));
 
+        if(msg.m_data == null)
+        {
+            throw new Exception("protocol msg.m_data is null !");
+        }
 
         return msg;
     }
@@ -1135,7 +1155,7 @@ public class ProtocolService : INetworkInterface
                             List<byte> byteTmp = GetCustomTypeByte(customType, (Dictionary<string, object>)data[fieldName]);
 
                             Bytes.WriteInt(byteTmp.Count);
-                            Bytes.bytes.AddRange(byteTmp);
+                            Bytes.Bytes.AddRange(byteTmp);
                         }
                         else
                         {
@@ -1149,13 +1169,13 @@ public class ProtocolService : INetworkInterface
                             {
                                 List<byte> tempb = m_arrayCache[j];
                                 Bytes.WriteInt(tempb.Count);
-                                Bytes.bytes.AddRange(tempb);
+                                Bytes.Bytes.AddRange(tempb);
                             }
                         }
                     }
                 }
             }
-            return Bytes.bytes;
+            return Bytes.Bytes;
         }
         catch(Exception e)
         {

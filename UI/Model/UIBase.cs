@@ -9,7 +9,6 @@ public class UIBase : MonoBehaviour
     public Canvas m_canvas;
 
     #region 重载方法
-
     //当UI第一次打开时调用OnInit方法，调用时机在OnOpen之前
     public virtual void OnInit()
     {
@@ -67,7 +66,7 @@ public class UIBase : MonoBehaviour
     {
         m_UIID = id;
         m_canvas = GetComponent<Canvas>();
-
+        m_UIName = null;
         CreateObjectTable();
         OnInit();
     }
@@ -87,7 +86,9 @@ public class UIBase : MonoBehaviour
         m_objects.Clear();
 
         m_images.Clear();
+        m_Sprites.Clear();
         m_texts.Clear();
+        m_textmeshs.Clear();
         m_buttons.Clear();
         m_scrollRects.Clear();
         m_reusingScrollRects.Clear();
@@ -104,6 +105,7 @@ public class UIBase : MonoBehaviour
         {
             if (m_objectList[i] != null)
             {
+                //Debug.Log("===>"+m_objectList[i].name);
                 if (m_objects.ContainsKey(m_objectList[i].name))
                 {
                     Debug.LogError("CreateObjectTable ContainsKey ->" + m_objectList[i].name + "<-");
@@ -124,7 +126,9 @@ public class UIBase : MonoBehaviour
 
     Dictionary<string, GameObject> m_objects = new Dictionary<string, GameObject>();
     Dictionary<string, Image> m_images = new Dictionary<string, Image>();
+    Dictionary<string, Sprite> m_Sprites = new Dictionary<string, Sprite>();
     Dictionary<string, Text> m_texts = new Dictionary<string, Text>();
+    Dictionary<string, TextMesh> m_textmeshs = new Dictionary<string, TextMesh>();
     Dictionary<string, Button> m_buttons = new Dictionary<string, Button>();
     Dictionary<string, ScrollRect> m_scrollRects = new Dictionary<string, ScrollRect>();
     Dictionary<string, ReusingScrollRect> m_reusingScrollRects = new Dictionary<string, ReusingScrollRect>();
@@ -133,6 +137,7 @@ public class UIBase : MonoBehaviour
     Dictionary<string, InputField> m_inputFields = new Dictionary<string, InputField>();
     Dictionary<string, Slider> m_Sliders = new Dictionary<string, Slider>();
     Dictionary<string, Canvas> m_Canvas = new Dictionary<string, Canvas>();
+    Dictionary<string, Toggle> m_Toggle = new Dictionary<string, Toggle>();
 
     Dictionary<string, UGUIJoyStick> m_joySticks = new Dictionary<string, UGUIJoyStick>();
     Dictionary<string, UGUIJoyStickBase> m_joySticks_ro = new Dictionary<string, UGUIJoyStickBase>();
@@ -206,7 +211,23 @@ public class UIBase : MonoBehaviour
         m_uiBases.Add(name, tmp);
         return tmp;
     }
+    public Sprite GetSprite(string name)
+    {
+        if (m_Sprites.ContainsKey(name))
+        {
+            return m_Sprites[name];
+        }
 
+        Sprite tmp = GetGameObject(name).GetComponent<Sprite>();
+
+        if (tmp == null)
+        {
+            throw new Exception(m_EventNames + " GetImage ->" + name + "<- is Null !");
+        }
+
+        m_Sprites.Add(name, tmp);
+        return tmp;
+    }
     public Image GetImage(string name)
     {
         if (m_images.ContainsKey(name))
@@ -224,7 +245,25 @@ public class UIBase : MonoBehaviour
         m_images.Add(name, tmp);
         return tmp;
     }
+    public TextMesh GetTextMesh(string name)
+    {
+        if (m_textmeshs.ContainsKey(name))
+        {
+            return m_textmeshs[name];
+        }
 
+        TextMesh tmp = GetGameObject(name).GetComponent<TextMesh>();
+
+
+
+        if (tmp == null)
+        {
+            throw new Exception(m_EventNames + " GetText ->" + name + "<- is Null !");
+        }
+
+        m_textmeshs.Add(name, tmp);
+        return tmp;
+    }
     public Text GetText(string name)
     {
         if (m_texts.ContainsKey(name))
@@ -240,6 +279,23 @@ public class UIBase : MonoBehaviour
         }
 
         m_texts.Add(name, tmp);
+        return tmp;
+    }
+    public Toggle GetToggle(string name)
+    {
+        if (m_Toggle .ContainsKey(name))
+        {
+            return m_Toggle[name];
+        }
+
+        Toggle tmp = GetGameObject(name).GetComponent<Toggle>();
+
+        if (tmp == null)
+        {
+            throw new Exception(m_EventNames + " GetText ->" + name + "<- is Null !");
+        }
+
+        m_Toggle.Add(name, tmp);
         return tmp;
     }
 
@@ -486,11 +542,11 @@ public class UIBase : MonoBehaviour
     protected List<Enum> m_EventNames = new List<Enum>();
     protected List<EventHandRegisterInfo> m_EventListeners = new List<EventHandRegisterInfo>();
 
-    protected List<InputEventRegisterInfo<InputUIOnClickEvent>> m_OnClickEvents = new List<InputEventRegisterInfo<InputUIOnClickEvent>>();
-    protected List<InputEventRegisterInfo<InputUILongPressEvent>> m_LongPressEvents = new List<InputEventRegisterInfo<InputUILongPressEvent>>();
-    protected List<InputEventRegisterInfo<InputUIOnDragEvent>> m_DragEvents = new List<InputEventRegisterInfo<InputUIOnDragEvent>>();
-    protected List<InputEventRegisterInfo<InputUIOnBeginDragEvent>> m_BeginDragEvents = new List<InputEventRegisterInfo<InputUIOnBeginDragEvent>>();
-    protected List<InputEventRegisterInfo<InputUIOnEndDragEvent>> m_EndDragEvents = new List<InputEventRegisterInfo<InputUIOnEndDragEvent>>();
+    protected List<InputEventRegisterInfo> m_OnClickEvents = new List<InputEventRegisterInfo>();
+    protected List<InputEventRegisterInfo> m_LongPressEvents = new List<InputEventRegisterInfo>();
+    protected List<InputEventRegisterInfo> m_DragEvents = new List<InputEventRegisterInfo>();
+    protected List<InputEventRegisterInfo> m_BeginDragEvents = new List<InputEventRegisterInfo>();
+    protected List<InputEventRegisterInfo> m_EndDragEvents = new List<InputEventRegisterInfo>();
 
     public virtual void RemoveAllListener()
     {
@@ -502,70 +558,93 @@ public class UIBase : MonoBehaviour
 
         for (int i = 0; i < m_OnClickEvents.Count; i++)
         {
-            m_OnClickEvents[i].RemoveListener();
+            m_OnClickEvents[i].RemoveListener(true);
         }
         m_OnClickEvents.Clear();
 
         for (int i = 0; i < m_LongPressEvents.Count; i++)
         {
-            m_LongPressEvents[i].RemoveListener();
+            m_LongPressEvents[i].RemoveListener(true);
         }
         m_LongPressEvents.Clear();
 
         #region 拖动事件
         for (int i = 0; i < m_DragEvents.Count; i++)
         {
-            m_DragEvents[i].RemoveListener();
+            m_DragEvents[i].RemoveListener(true);
         }
         m_DragEvents.Clear();
 
         for (int i = 0; i < m_BeginDragEvents.Count; i++)
         {
-            m_BeginDragEvents[i].RemoveListener();
+            m_BeginDragEvents[i].RemoveListener(true);
         }
         m_BeginDragEvents.Clear();
 
         for (int i = 0; i < m_EndDragEvents.Count; i++)
         {
-            m_EndDragEvents[i].RemoveListener();
+            m_EndDragEvents[i].RemoveListener(true);
         }
         m_EndDragEvents.Clear();
     #endregion
     }
 
+    #region 添加监听
+
+    bool GetRegister(List<InputEventRegisterInfo> list, string eventKey)
+    {
+        int registerCount = 0;
+        for (int i = 0; i < list.Count; i++)
+        {
+            if (list[i].eventKey == eventKey)
+            {
+                registerCount++;
+            }
+        }
+
+        return registerCount == 0;
+    }
+
     public void AddOnClickListener(string buttonName, InputEventHandle<InputUIOnClickEvent> callback, string parm = null)
     {
-        InputEventRegisterInfo<InputUIOnClickEvent> info = InputUIEventProxy.AddOnClickListener(GetButton(buttonName), UIEventKey, buttonName, parm, callback);
+        InputButtonClickRegisterInfo info = InputUIEventProxy.GetOnClickListener(GetButton(buttonName), UIEventKey, buttonName, parm, callback);
+        info.AddListener(GetRegister(m_OnClickEvents, info.eventKey));
         m_OnClickEvents.Add(info);
     }
 
     public void AddOnClickListenerByCreate(Button button, string compName, InputEventHandle<InputUIOnClickEvent> callback, string parm = null)
     {
-        InputEventRegisterInfo<InputUIOnClickEvent> info = InputUIEventProxy.AddOnClickListener(button, UIEventKey, compName, parm, callback);
+        InputButtonClickRegisterInfo info = InputUIEventProxy.GetOnClickListener(button, UIEventKey, compName, parm, callback);
+        info.AddListener(GetRegister(m_OnClickEvents, info.eventKey));
         m_OnClickEvents.Add(info);
     }
 
     public void AddLongPressListener(string compName, InputEventHandle<InputUILongPressEvent> callback, string parm = null)
     {
-        InputEventRegisterInfo<InputUILongPressEvent> info = InputUIEventProxy.AddLongPressListener(GetLongPressComp(compName), UIEventKey, compName, parm, callback);
+        InputEventRegisterInfo<InputUILongPressEvent> info = InputUIEventProxy.GetLongPressListener(GetLongPressComp(compName), UIEventKey, compName, parm, callback);
+        info.AddListener(GetRegister(m_LongPressEvents, info.eventKey));
         m_LongPressEvents.Add(info);
+
     }
 
     public void AddDragListener(string compName, InputEventHandle<InputUIOnDragEvent> callback, string parm = null)
     {
-        InputEventRegisterInfo<InputUIOnDragEvent> info = InputUIEventProxy.AddOnDragListener(GetDragComp(compName), UIEventKey, compName, parm, callback);
+        InputEventRegisterInfo<InputUIOnDragEvent> info = InputUIEventProxy.GetOnDragListener(GetDragComp(compName), UIEventKey, compName, parm, callback);
+        info.AddListener(GetRegister(m_DragEvents, info.eventKey));
         m_DragEvents.Add(info);
     }
 
     public void AddBeginDragListener(string compName, InputEventHandle<InputUIOnBeginDragEvent> callback, string parm = null)
     {
-        InputEventRegisterInfo<InputUIOnBeginDragEvent> info = InputUIEventProxy.AddOnBeginDragListener(GetDragComp(compName), UIEventKey, compName, parm, callback);
+        InputEventRegisterInfo<InputUIOnBeginDragEvent> info = InputUIEventProxy.GetOnBeginDragListener(GetDragComp(compName), UIEventKey, compName, parm, callback);
+        info.AddListener(GetRegister(m_BeginDragEvents, info.eventKey));
         m_BeginDragEvents.Add(info);
     }
 
     public void AddEndDragListener(string compName, InputEventHandle<InputUIOnEndDragEvent> callback, string parm = null)
     {
-        InputEventRegisterInfo<InputUIOnEndDragEvent> info = InputUIEventProxy.AddOnEndDragListener(GetDragComp(compName), UIEventKey, compName, parm, callback);
+        InputEventRegisterInfo<InputUIOnEndDragEvent> info = InputUIEventProxy.GetOnEndDragListener(GetDragComp(compName), UIEventKey, compName, parm, callback);
+        info.AddListener(GetRegister(m_EndDragEvents, info.eventKey));
         m_EndDragEvents.Add(info);
     }
 
@@ -579,6 +658,37 @@ public class UIBase : MonoBehaviour
 
         m_EventListeners.Add(info);
     }
+
+    #endregion
+
+    #region 移除监听
+
+    //TODO 逐步添加所有的移除监听方法
+
+    public InputButtonClickRegisterInfo GetClickRegisterInfo(string buttonName, InputEventHandle<InputUIOnClickEvent> callback, string parm )
+    {
+        string eventKey = InputUIOnClickEvent.GetEventKey(UIEventKey, buttonName, parm);
+        for (int i = 0; i < m_OnClickEvents.Count; i++)
+        {
+            InputButtonClickRegisterInfo info = (InputButtonClickRegisterInfo)m_OnClickEvents[i];
+            if (info.eventKey == eventKey
+                && info.callBack == callback)
+            {
+                return info;
+            }
+        }
+
+        throw new Exception("GetClickRegisterInfo Exception not find RegisterInfo by " + buttonName + " parm " + parm);
+    }
+
+    public void RemoveOnClickListener(string buttonName, InputEventHandle<InputUIOnClickEvent> callback, string parm = null)
+    {
+        InputButtonClickRegisterInfo info = GetClickRegisterInfo(buttonName, callback, parm);
+        m_OnClickEvents.Remove(info);
+        info.RemoveListener(GetRegister(m_OnClickEvents, info.eventKey));
+    }
+
+    #endregion
 
     #endregion
 
@@ -646,6 +756,7 @@ public class UIBase : MonoBehaviour
     {
         for (int i = 0; i < m_ChildList.Count; i++)
         {
+            m_ChildList[i].RemoveAllListener();
             m_ChildList[i].OnUIDestroy();
             GameObjectManager.DestroyGameObjectByPool(m_ChildList[i].gameObject, isActive);
         }
@@ -665,6 +776,38 @@ public class UIBase : MonoBehaviour
         }
 
         throw new Exception(UIName + " GetItem Exception Dont find Item: " + itemName);
+    }
+
+    public UIBase GetItemByIndex(string itemName,int index)
+    {
+        for (int i = 0; i < m_ChildList.Count; i++)
+        {
+            if (m_ChildList[i].name == itemName)
+            {
+                //Debug.Log("GetItemByIndex " + index, m_ChildList[i]);
+
+                index--;
+                if(index == 0)
+                {
+                    return m_ChildList[i];
+                }
+            }
+        }
+
+        throw new Exception(UIName + " GetItem Exception Dont find Item: " + itemName);
+    }
+
+    public UIBase GetItemByKey(string uiEvenyKey)
+    {
+        for (int i = 0; i < m_ChildList.Count; i++)
+        {
+            if (m_ChildList[i].UIEventKey == uiEvenyKey)
+            {
+                return m_ChildList[i];
+            }
+        }
+
+        throw new Exception(UIName + " GetItemByKey Exception Dont find Item: " + uiEvenyKey);
     }
 
     public bool GetItemIsExist(string itemName)
@@ -688,7 +831,7 @@ public class UIBase : MonoBehaviour
 
     public void SetText(string TextID, string content)
     {
-        GetText(TextID).text = content;
+        GetText(TextID).text = content.Replace("//n", "/n");
     }
 
     public void SetImageColor(string ImageID, Color color)
@@ -749,6 +892,11 @@ public class UIBase : MonoBehaviour
         GetRectTransform(TextID).sizeDelta = Vector2.right * -value * 2 + Vector2.up * height;
     }
 
+    public void SetWidth(string TextID, float width, float height)
+    {
+        GetRectTransform(TextID).sizeDelta = Vector2.right * width + Vector2.up * height;
+    }
+
     public void SetPosition(string TextID, float x, float y, float z, bool islocal)
     {
         if (islocal)
@@ -761,6 +909,11 @@ public class UIBase : MonoBehaviour
     public void SetScale(string TextID, float x, float y, float z)
     {
         GetGameObject(TextID).transform.localScale = Vector3.right * x + Vector3.up * y + Vector3.forward * z;
+    }
+
+    public void SetMeshText(string TextID, string txt)
+    {
+        GetTextMesh(TextID).text = txt;
     }
 
     #endregion
@@ -778,6 +931,11 @@ public class UIBase : MonoBehaviour
     public void SetItemGuideMode(string itemName, int order = 1)
     {
         SetGuideMode(GetItem(itemName).gameObject, order);
+    }
+
+    public void SetItemGuideModeByIndex(string itemName, int index ,int order = 1)
+    {
+        SetGuideMode(GetItemByIndex(itemName, index).gameObject, order);
     }
 
     public void SetSelfGuideMode(int order = 1)
@@ -812,7 +970,7 @@ public class UIBase : MonoBehaviour
 
         //如果检测到目标对象
         bool oldActive = go.activeSelf;
-        if(!oldActive)
+        if (!oldActive)
         {
             go.SetActive(true);
         }
@@ -821,36 +979,59 @@ public class UIBase : MonoBehaviour
         canvas.sortingOrder = order;
         canvas.sortingLayerName = "Guide";
 
-        if(!oldActive)
+        if (!oldActive)
         {
             go.SetActive(false);
         }
 
-        m_GuideList.Add(go);
-        m_CreateCanvasDict.Add(go, status);
+        if(!m_CreateCanvasDict.ContainsKey(go))
+        {
+            m_CreateCanvasDict.Add(go, status);
+            m_GuideList.Add(go);
+        }
+        else
+        {
+            Debug.LogError("m_CreateCanvasDict " + go);
+        }
     }
 
     public void CancelGuideModel(GameObject go)
     {
+        if (go == null)
+        {
+            Debug.LogError("go is null");
+            return;
+        }
+
         Canvas canvas = go.GetComponent<Canvas>();
         GraphicRaycaster graphic = go.GetComponent<GraphicRaycaster>();
 
-        GuideChangeData status = m_CreateCanvasDict[go];
-
-        if (graphic != null && status.isCreateGraphic)
+        if (m_CreateCanvasDict.ContainsKey(go))
         {
-             Destroy(graphic);
-        }
+            GuideChangeData status = m_CreateCanvasDict[go];
 
-        if (canvas != null && status.isCreateCanvas)
-        {
-            Destroy(canvas);
+            if (graphic != null && status.isCreateGraphic)
+            {
+                DestroyImmediate(graphic);
+            }
+
+            if (canvas != null && status.isCreateCanvas)
+            {
+                DestroyImmediate(canvas);
+            }
+            else
+            {
+                if (canvas != null)
+                {
+                    canvas.overrideSorting = status.OldOverrideSorting;
+                    canvas.sortingOrder = status.OldSortingOrder;
+                    canvas.sortingLayerName = status.oldSortingLayerName;
+                }
+            }
         }
         else
         {
-            canvas.overrideSorting = status.OldOverrideSorting;
-            canvas.sortingOrder = status.OldSortingOrder;
-            canvas.sortingLayerName = status.oldSortingLayerName;
+            Debug.LogError("m_CreateCanvasDict.ContainsKey(go) is error");
         }
     }
 
@@ -871,11 +1052,18 @@ public class UIBase : MonoBehaviour
             CancelGuideModel(m_GuideList[i]);
         }
 
+        for (int i = 0; i < m_ChildList.Count; i++)
+        {
+            m_ChildList[i].ClearGuideModel();
+        }
+
         m_GuideList.Clear();
         m_CreateCanvasDict.Clear();
     }
 
     #endregion
+
+    #region 工具方法
 
     [ContextMenu("ObjectList 去重")]
     public void ClearObject()
@@ -898,4 +1086,5 @@ public class UIBase : MonoBehaviour
         m_objectList = ls;
     }
 
+    #endregion
 }
