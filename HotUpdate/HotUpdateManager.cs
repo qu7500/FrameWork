@@ -61,23 +61,32 @@ public class HotUpdateManager
 
     static void CheckLocalVersion()
     {
-        AssetBundle ab = AssetBundle.LoadFromFile(PathTool.GetAbsolutePath(ResLoadLocation.Streaming,
-            c_versionFileName + "." + AssetsBundleManager.c_AssetsBundlesExpandName));
-        TextAsset text = (TextAsset)ab.mainAsset;
-        string StreamVersionContent = text.text;
-        ab.Unload(true);
-
-        //stream版本
-        Dictionary<string, object> StreamVersion = (Dictionary<string, object>)FrameWork.Json.Deserialize(StreamVersionContent);
-
-        //Streaming版本如果比Persistent版本还要新，则更新Persistent版本
-        if ((GetInt(StreamVersion[c_largeVersionKey]) > GetInt(m_versionConfig[c_largeVersionKey]))||
-            (GetInt(StreamVersion[c_smallVersonKey]) > GetInt(m_versionConfig[c_smallVersonKey]))
-            )
+        if (ApplicationManager.Instance.m_useAssetsBundle)
         {
-            RecordManager.CleanRecord(c_HotUpdateRecordName);
-            Init();
+            AssetBundle ab = AssetBundle.LoadFromFile(PathTool.GetAbsolutePath(ResLoadLocation.Streaming,
+            c_versionFileName + "." + AssetsBundleManager.c_AssetsBundlesExpandName));
+            TextAsset text = (TextAsset)ab.mainAsset;
+            string StreamVersionContent = text.text;
+            ab.Unload(true);
+
+            //stream版本
+            Dictionary<string, object> StreamVersion = (Dictionary<string, object>)FrameWork.Json.Deserialize(StreamVersionContent);
+
+            //Streaming版本如果比Persistent版本还要新，则更新Persistent版本
+            if ((GetInt(StreamVersion[c_largeVersionKey]) > GetInt(m_versionConfig[c_largeVersionKey])) ||
+                (GetInt(StreamVersion[c_smallVersonKey]) > GetInt(m_versionConfig[c_smallVersonKey]))
+                )
+            {
+                RecordManager.CleanRecord(c_HotUpdateRecordName);
+                Init();
+            }
         }
+        else
+        {
+
+        }
+
+       
     }
 
     static IEnumerator CheckVersion()
@@ -290,6 +299,7 @@ public class HotUpdateManager
         }
 
         string downLoadPath = downLoadServicePath + "/" + platform + "/" + Application.version + "/";
+        Debug.Log("=====>"+downLoadPath);
 
         s_versionFileDownLoadPath   = downLoadPath + HotUpdateManager.c_versionFileName + "." + AssetsBundleManager.c_AssetsBundlesExpandName;
         s_Md5FileDownLoadPath       = downLoadPath + ResourcesConfigManager.c_ManifestFileName + "." + AssetsBundleManager.c_AssetsBundlesExpandName;

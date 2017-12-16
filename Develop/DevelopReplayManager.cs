@@ -33,7 +33,7 @@ public class DevelopReplayManager
 
     public static bool s_isProfile = true;
 
-    static List<Dictionary<string, string>> s_eventStreamSerialize;
+    //static List<Dictionary<string, string>> s_eventStreamSerialize;
     static List<IInputEventBase> s_eventStream;
 
     static List<int> s_randomList;
@@ -97,7 +97,7 @@ public class DevelopReplayManager
             Log.Init(true); //日志记录启动
 
             ApplicationManager.s_OnApplicationUpdate += OnRecordUpdate;
-            InputManager.OnEveryEventDispatch += OnEveryEventCallBack;
+            //InputManager.OnEveryEventDispatch += OnEveryEventCallBack;
             GUIConsole.onGUICallback += RecordModeGUI;
             GUIConsole.onGUICloseCallback += ProfileGUI;
 
@@ -127,15 +127,15 @@ public class DevelopReplayManager
 
         tmp.Add(c_eventNameKey, inputEvent.GetType().Name);
         tmp.Add(c_serializeInfoKey, inputEvent.Serialize());
+
         try
         {
-            WriteInputEvent(Json.Serialize(tmp));
+            WriteInputEvent(Serializer.Serialize(tmp));
         }
         catch(Exception e)
         {
             Debug.LogError("Write Dev Log Error! : " + e.ToString());
         }
-        
     }
 
     public static void OnGetRandomCallBack(int random)
@@ -199,6 +199,8 @@ public class DevelopReplayManager
 
     static void WriteInputEvent(string EventSerializeContent)
     {
+        //Debug.Log("EventSerializeContent: " + EventSerializeContent);
+
         if (m_EventWriter != null)
         {
             m_EventWriter.WriteLine(EventSerializeContent);
@@ -228,7 +230,7 @@ public class DevelopReplayManager
         LoadEventStream(eventContent.Split('\n'));
         LoadRandomList(randomContent.Split('\n'));
     }
-
+    public static Deserializer Deserializer = new Deserializer();
     static void LoadEventStream(string[] content)
     {
         s_eventStream = new List<IInputEventBase>();
@@ -236,8 +238,8 @@ public class DevelopReplayManager
         {
             if (content[i] != "")
             {
-                Dictionary<string, object> info = (Dictionary<string, object>)(Json.Deserialize(content[i]));
-                IInputEventBase eTmp = (IInputEventBase)JsonUtility.FromJson(info[c_serializeInfoKey].ToString(), Type.GetType(info[c_eventNameKey].ToString()));
+                Dictionary<string, object> info = (Deserializer.Deserialize<Dictionary<string, object>> (content[i]));
+                IInputEventBase eTmp = (IInputEventBase)Deserializer.Deserialize(Type.GetType(info[c_eventNameKey].ToString()),info[c_serializeInfoKey].ToString());
                 s_eventStream.Add(eTmp);
             }
         }
@@ -365,6 +367,7 @@ public class DevelopReplayManager
     }
 
     static string LogContent = "";
+    static string LogPath = "";
 
     static void ShowLogList()
     {
@@ -377,6 +380,7 @@ public class DevelopReplayManager
                 isShowLog = true;
                 scrollPos = Vector2.zero;
                 LogContent = LogOutPutThread.LoadLogContent(FileNameList[i]);
+                LogPath = LogOutPutThread.GetPath(FileNameList[i]);
             }
         }
 
@@ -402,9 +406,28 @@ public class DevelopReplayManager
     {
         scrollPos = GUILayout.BeginScrollView(scrollPos);
 
-        GUILayout.TextArea(LogContent);
-
+        try
+        {
+            GUIUtil.SafeTextArea(LogContent);
+        }
+        catch(Exception e)
+        {
+            GUILayout.TextArea(e.ToString());
+        }
+        
         GUILayout.EndScrollView();
+
+        if(URLManager.GetURL("LogUpLoadURL") != null)
+        {
+            if (GUILayout.Button("上传日志"))
+            {
+                HTTPTool.Upload_Request_Thread(URLManager.GetURL("LogUpLoadURL"), LogPath);
+            }
+        }
+        else
+        {
+            GUILayout.Label("上传日志需要在 URLConfig -> LogUpLoadURL 配置上传目录");
+        }
 
         if (GUILayout.Button("复制到剪贴板"))
         {

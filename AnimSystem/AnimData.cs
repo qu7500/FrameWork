@@ -378,7 +378,7 @@ public class AnimData
 
         if (isChild)
         {
-            Image[] images = m_animGameObejct.GetComponentsInChildren<Image>();
+            Image[] images = m_animGameObejct.GetComponentsInChildren<Image>(true);
             for (int i = 0; i < images.Length; i++)
             {
                 if (images[i].transform.GetComponent<Mask>() == null)
@@ -388,7 +388,7 @@ public class AnimData
                 }
             }
 
-            Text[] texts = m_animGameObejct.GetComponentsInChildren<Text>();
+            Text[] texts = m_animGameObejct.GetComponentsInChildren<Text>(true);
 
             for (int i = 0; i < texts.Length; i++)
             {

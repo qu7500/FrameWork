@@ -105,7 +105,10 @@ namespace FrameWork.Protocol
 
             for (int i = 0; i < fields.Length; i++)
             {
-                content += GetTab(1) + GenerateProtocolMessageField(fields[i], ref index);
+                if(!fields[i].IsStatic)
+                {
+                    content += GetTab(1) + GenerateProtocolMessageField(fields[i], ref index);
+                }
             }
 
             content += "}\n";
@@ -344,6 +347,7 @@ namespace FrameWork.Protocol
                     {
                         log += ("跳过了 " + className + " 类\n");
 
+                        //检查类的子结构，放入Struct列表中
                         string name = "m_" + item.Value + "_c";
                         if (protocolInfo.ContainsKey(name))
                         {
@@ -370,14 +374,24 @@ namespace FrameWork.Protocol
             output += GetTab(1) + "#region Struct\n";
             for (int i = 0; i < s_SubStruct.Count; i++)
             {
-                try
+                if(GetAimStructType(s_SubStruct[i]) == null)
                 {
-                    output += GenerateProtocolClass(2, SendMode.Both, null, s_SubStruct[i], protocolInfo[s_SubStruct[i]], true);
+                    try
+                    {
+                        output += GenerateProtocolClass(2, SendMode.Both, null, s_SubStruct[i], protocolInfo[s_SubStruct[i]], true);
+                    }
+                    catch (Exception e)
+                    {
+                        throw new Exception("s_SubStruct[i] ->" + s_SubStruct[i] + "\n" + e.ToString());
+                    }
                 }
-                catch(Exception e)
+                else
                 {
-                    throw new Exception("s_SubStruct[i] ->" + s_SubStruct[i] + "\n" + e.ToString());
+                    log += ("跳过了 " + s_SubStruct[i] + " 结构\n");
+                    //检查结构的子结构，放入Struct列表中
+                    GenerateProtocolClass(2, SendMode.Both, null, s_SubStruct[i], protocolInfo[s_SubStruct[i]], true);
                 }
+
             }
             output += GetTab(1) + "#endregion \n";
 
@@ -514,7 +528,24 @@ namespace FrameWork.Protocol
 
             for (int i = 0; i < types.Length; i++)
             {
-                if (typeof(CsharpProtocolInterface).IsAssignableFrom(types[i])
+                if ((typeof(CsharpProtocolInterface).IsAssignableFrom(types[i])|| typeof(IProtocolStructInterface).IsAssignableFrom(types[i]))
+                    && types[i].Name.ToLower() == name.ToLower()
+                    )
+                {
+                    return types[i];
+                }
+            }
+
+            return null;
+        }
+
+        static Type GetAimStructType(string name)
+        {
+            Type[] types = EditorTool.GetTypes();
+
+            for (int i = 0; i < types.Length; i++)
+            {
+                if (typeof(IProtocolStructInterface).IsAssignableFrom(types[i])
                     && types[i].Name.ToLower() == name.ToLower()
                     )
                 {
@@ -715,7 +746,7 @@ namespace FrameWork.Protocol
 
             for (int i = 0; i < msgList.Count; i++)
             {
-                if(GetSendMode(msgList[i]) == SendMode.ToClient
+                if (GetSendMode(msgList[i]) == SendMode.ToClient
                     || GetSendMode(msgList[i]) == SendMode.Both)
                 {
                     csharpContent += GenerateReceviceCommandContent(msgList[i]);
@@ -872,7 +903,14 @@ namespace FrameWork.Protocol
                 vy = ((ModuleAttribute)objy[0]).MessageCode;
             }
 
-            return vx.CompareTo(vy);
+            if (vx == vy)
+            {
+                return x.Name.CompareTo(y.Name);
+            }
+            else
+            {
+                return vx.CompareTo(vy);
+            }
         }
 
         static bool GetIsModule(Type type)
@@ -894,13 +932,14 @@ namespace FrameWork.Protocol
 
             content += GetTab(1) + "public static void SendCommand (IProtocolMessageInterface cmd)\n";
             content += GetTab(1) + "{\n";
-
+            int index = 0;
             for (int i = 0; i < msgList.Count; i++)
             {
                 if (GetSendMode(msgList[i]) == SendMode.ToServer
                     || GetSendMode(msgList[i]) == SendMode.Both)
                 {
-                    content += GenerateSendIfContent(msgList[i], i != 0);
+                    content += GenerateSendIfContent(msgList[i], index != 0);
+                    index++;
                 }
             }
 
@@ -963,7 +1002,10 @@ namespace FrameWork.Protocol
 
             for (int i = 0; i < fields.Length; i++)
             {
-                content += GenerateSerializeFieldContent(tab, fields[i],aimName,sourceName);
+                if(!fields[i].IsStatic)
+                {
+                    content += GenerateSerializeFieldContent(tab, fields[i], aimName, sourceName);
+                }
             }
 
             return content;
@@ -1085,7 +1127,7 @@ namespace FrameWork.Protocol
                 }
                 else if (field.FieldType.IsSubclassOf(typeof(Enum)))
                 {
-                    content += GetTab(tab) + aimName + "." + field.Name + " = " + "(" + field.FieldType.Name + ")" + sourceName + "[\"" + GenerateProtocolFieldName(field) + "\"];\n";
+                    content += GetTab(tab) + aimName + "." + field.Name + " = " + "(" + field.FieldType.FullName.Replace('+','.') + ")" + sourceName + "[\"" + GenerateProtocolFieldName(field) + "\"];\n";
                 }
 
                 else if (field.FieldType == typeof(string))
@@ -1153,7 +1195,10 @@ namespace FrameWork.Protocol
 
             for (int i = 0; i < fields.Length; i++)
             {
-                content += GenerateAnalysisContent(tab, fields[i], aimName, sourceName);
+                if(!fields[i].IsStatic)
+                {
+                    content += GenerateAnalysisContent(tab, fields[i], aimName, sourceName);
+                }
             }
 
             return content;
