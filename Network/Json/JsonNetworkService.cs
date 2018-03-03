@@ -8,7 +8,7 @@ using System.Text;
 using System.Collections.Generic;
 using FrameWork;
 
-public class TCPService : INetworkInterface 
+public class JsonNetworkService : INetworkInterface 
 {
     /// <summary>
     /// 消息结尾符
@@ -20,94 +20,10 @@ public class TCPService : INetworkInterface
     /// </summary>
     public const string c_endCharReplaceString = "<FCP:AND>";
 
-    private Socket m_Socket;
-    private byte[] m_readData = new byte[1024];
-
-    private Thread m_connThread;
-
-    public override void Init()
+    public override void SpiltMessage(byte[] data, ref int offset, int length)
     {
-
-    }
-
-    public override void GetIPAddress()
-    {
-        //m_IPaddress = DataManager.GetData("ServerData")["1"].GetString("Address");
-        //m_port = DataManager.GetData("ServerData")["1"].GetInt("port");
-    }
-
-    public override void SetIPAddress(string IP,int port)
-    {
-        m_IPaddress = IP;
-        m_port = port;
-    }
-
-    //连接服务器
-    public override void Connect()
-    {
-        Close();
-
-        m_connThread = null;
-        m_connThread = new Thread(new ThreadStart(requestConnect));
-        m_connThread.Start();
-    }
-
-    //关闭连接
-    public override void Close()
-    {
-        isConnect = false;
-        if (m_Socket != null)
-        {
-            m_Socket.Close(0);
-            m_Socket = null;
-        }
-        if (m_connThread != null)
-        {
-            m_connThread.Join();
-            m_connThread.Abort();
-        }
-        m_connThread = null;
-    }
-
-    //请求数据服务连接线程
-    void requestConnect()
-    {
-        try
-        {
-            m_ConnectStatusCallback(NetworkState.Connecting);
-
-            m_Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            IPAddress ip = IPAddress.Parse(m_IPaddress);
-            IPEndPoint ipe = new IPEndPoint(ip, m_port);
-            //mSocket.
-            m_Socket.Connect(ipe);
-            isConnect = true;
-            StartReceive();
-
-            m_ConnectStatusCallback(NetworkState.Connected);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError(e.ToString());
-            isConnect = false;
-            m_ConnectStatusCallback(NetworkState.FaildToConnect);
-        }
-
-    }
-    void StartReceive()
-    {
-        m_Socket.BeginReceive(m_readData, 0, m_readData.Length, SocketFlags.None, new AsyncCallback(EndReceive), m_Socket);
-    }
-    void EndReceive(IAsyncResult iar) //接收数据
-    {
-        Socket remote = (Socket)iar.AsyncState;
-        int recv = remote.EndReceive(iar);
-        if (recv > 0)
-        {
-            DealMessage(Encoding.UTF8.GetString(m_readData, 0, recv));
-        }
-
-        StartReceive();
+        DealMessage(Encoding.UTF8.GetString(data, offset, length));
+        offset = 0;
     }
 
     //发送消息
@@ -124,12 +40,11 @@ public class TCPService : INetworkInterface
             mes = mes.Replace(c_endChar.ToString(), c_endCharReplaceString);
             byte[] bytes = Encoding.UTF8.GetBytes(mes + "&");
 
-            m_Socket.Send(bytes);
+            m_socketService.Send(bytes);
         }
         catch (Exception e)
         {
             Debug.LogError(e.ToString());
-            //m_netWorkCallBack(e.ToString());
         }
     }
 
@@ -177,7 +92,7 @@ public class TCPService : INetworkInterface
         {
             if(s != null && s != "")
             {
-                NetWorkMessage msg = GetMessageByPool();
+                NetWorkMessage msg = new NetWorkMessage();
 
                 s = WWW.UnEscapeURL(s);
                 s = s.Replace(c_endCharReplaceString, c_endChar.ToString());
@@ -188,13 +103,10 @@ public class TCPService : INetworkInterface
 
                 m_messageCallBack(msg);
             }
-
         }
         catch(Exception e)
         {
             Debug.LogError("Message error ->" + s +"<-\n" + e.ToString());
         }
     }
-
-
 }
